@@ -16,7 +16,8 @@
 -type cmp_fun() :: {fun((term(), term()) -> boolean())}.
 -type option() :: {atom(), term()}.
 
--export([new/3, to_list/1, add/2]).
+-export([new/3, from_list/2, from_list/4, to_list/1, size/1, max_size/1]).
+-export([add/2, delete/2]).
 
 -spec new(cmp_fun(), cmp_fun(), [option()]) -> recordset().
 new(IdentityFun, SortFun, Options) ->
@@ -24,6 +25,29 @@ new(IdentityFun, SortFun, Options) ->
                identity_function=IdentityFun,
                sort_function=SortFun}.
 
+-spec from_list([term()], cmp_fun(), cmp_fun(), [option()]) -> recordset().
+from_list(List, IdentityFun, SortFun, Options) ->
+    from_list(List, recordset:new(IdentityFun, SortFun, Options)).
+
+-spec from_list([term()], recordset()) -> recordset().
+from_list(List, RecordSet) ->
+    lists:foldl(fun(Term, RS) ->
+                        recordset:add(Term, RS)
+                end,
+                RecordSet,
+                List).
+
+-spec to_list(recordset()) -> list().
+to_list(#recordset{set=Set}) ->
+    Set.
+
+-spec size(recordset()) -> integer().
+size(#recordset{set=Set}) ->
+    length(Set).
+
+-spec max_size(recordset()) -> undefined | integer().
+max_size(#recordset{max_size=MaxSize}) ->
+    MaxSize.
 
 
 -spec add(term(), recordset()) -> recordset().
@@ -63,15 +87,24 @@ add_1(Term, IdentityFun, SortFun, [H | Set] = FullSet) ->
 add_1(Term, _IdentityFun, _SortFun, []) ->
     [Term].
 
-
-
--spec to_list(recordset()) -> list().
-to_list(#recordset{set=Set}) ->
-    Set.
-
-
-
 truncate(S, 0) ->
     S;
 truncate([_H | Set], I) ->
     truncate(Set, I-1).
+
+-spec delete(term(), recordset()) -> recordset().
+delete(Term, RecordSet = #recordset{set=[]}) ->
+    RecordSet;
+delete(Term, RecordSet = #recordset{
+               identity_function=IdentityFun,
+               set=Set}) ->
+    RecordSet#recordset{set=delete_1(Term, IdentityFun, Set)}.
+
+
+delete_1(Term, IdentityFun, [H | Set]) ->
+    case IdentityFun(Term, H) of
+        true ->
+            Set;
+        false ->
+            [H | delete_1(Term, IdentityFun, Set)]
+    end.
