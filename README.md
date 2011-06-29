@@ -48,7 +48,7 @@ And add a single element to it:
 The list representation of the set should then contain a single element of the
 score we just added.
 
-    [#score{timestamp=1, score=10, player=1}] = recordset:as_list(Scores1).
+    [#score{timestamp=1, score=10, player=1}] = recordset:to_list(Scores1).
 
 If we add a lower score we then the first element in the list representation
 should be the lower score and we should now have 2 total elements.
@@ -56,7 +56,7 @@ should be the lower score and we should now have 2 total elements.
     Scores2 = recordset:add(#score{timestamp=2, score=5, player=2}, Scores1).
 
     [#score{timestamp=2, score=5, player=2},
-     #score{timestamp=1, score=10, player=1}] = recordset:as_list(Scores2).
+     #score{timestamp=1, score=10, player=1}] = recordset:to_list(Scores2).
 
 If we add a new score for an existing user that is _higher_ than the existing
 score we should see 2 elements in the list with the new score for that user.
@@ -64,7 +64,7 @@ score we should see 2 elements in the list with the new score for that user.
     Scores3 = recordset:add(#score{timestamp=3, score=20, player=1}, Scores2),
 
     [#score{timestamp=2, score=5, player=2},
-     #score{timestamp=3, score=20, player=1}] = recordset:as_list(Scores3).
+     #score{timestamp=3, score=20, player=1}] = recordset:to_list(Scores3).
 
 And if we add a lower score for an existing user:
 
