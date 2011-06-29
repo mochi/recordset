@@ -35,8 +35,10 @@ So we would create a recordset for this record as follows:
                                 PlayerA =:= PlayerB
                             end,
                             fun(#score{timestamp=TsA, score=ScoreA},
-                                #score{timestamp=TsB, score=ScoreB}) ->
-                                {ScoreA, TsA} > {TsB, ScoreB}
+                                #score{timestamp=TsB, score=ScoreA}) ->
+                                TsB < TsA;
+                               (#score{score=scoreA}, #score{score=scoreB}) ->
+                                ScoreA < ScoreB
                             end,
                             [{max_size, 10}]).
 
@@ -70,4 +72,4 @@ And if we add a lower score for an existing user:
 
     Scores4 = recordset:add(#score{timestamp=4, score=1, player=2}, Scores3).
 
-    Score4 = Score3.
+    Scores4 = Scores3.
