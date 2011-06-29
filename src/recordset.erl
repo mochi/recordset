@@ -1,5 +1,8 @@
 -module(recordset).
 
+-author('David Reid <dreid@mochimedia.com>').
+-copyright('2011 Mochi Media, Inc.').
+
 -export_type([recordset/0]).
 
 -record(recordset, {
@@ -44,7 +47,12 @@ add(Term, RecordSet = #recordset{
 add_1(Term, IdentityFun, SortFun, [H | Set] = FullSet) ->
     case (make_fun(SortFun))(Term, H) of
         true ->
-            [Term | FullSet];
+            case (make_fun(IdentityFun))(Term, H) of
+                true ->
+                    FullSet;
+                false ->
+                    [Term | FullSet]
+            end;
         false ->
             case (make_fun(IdentityFun))(Term, H) of
                 true ->
@@ -53,7 +61,7 @@ add_1(Term, IdentityFun, SortFun, [H | Set] = FullSet) ->
                     [H | add_1(Term, IdentityFun, SortFun, Set)]
             end
     end;
-add_1(Term, IdentityFun, SortFun, []) ->
+add_1(Term, _IdentityFun, _SortFun, []) ->
     [Term].
 
 
@@ -74,5 +82,5 @@ make_fun(Function) when is_function(Function) ->
 
 truncate(S, 0) ->
     S;
-truncate([H | Set], I) ->
+truncate([_H | Set], I) ->
     truncate(Set, I-1).
