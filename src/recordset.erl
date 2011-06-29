@@ -13,8 +13,7 @@
          }).
 
 -opaque recordset() :: #recordset{}.
--type cmp_fun() :: {module(), atom()} |
-                   {fun((term(), term()) -> boolean())}.
+-type cmp_fun() :: {fun((term(), term()) -> boolean())}.
 -type option() :: {atom(), term()}.
 
 -export([new/3, to_list/1, add/2]).
@@ -45,16 +44,16 @@ add(Term, RecordSet = #recordset{
     RecordSet#recordset{set=Set1}.
 
 add_1(Term, IdentityFun, SortFun, [H | Set] = FullSet) ->
-    case (make_fun(SortFun))(Term, H) of
+    case SortFun(Term, H) of
         true ->
-            case (make_fun(IdentityFun))(Term, H) of
+            case IdentityFun(Term, H) of
                 true ->
                     FullSet;
                 false ->
                     [Term | FullSet]
             end;
         false ->
-            case (make_fun(IdentityFun))(Term, H) of
+            case IdentityFun(Term, H) of
                 true ->
                     add_1(Term, IdentityFun, SortFun, Set);
                 false ->
@@ -71,14 +70,6 @@ to_list(#recordset{set=Set}) ->
     Set.
 
 
-
-%% Internal
-make_fun({Module, Function}) ->
-    fun(A, B) ->
-            Module:Function(A, B)
-    end;
-make_fun(Function) when is_function(Function) ->
-    Function.
 
 truncate(S, 0) ->
     S;

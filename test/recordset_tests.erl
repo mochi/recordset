@@ -27,7 +27,7 @@ scoreset() ->
           #score{player=B}) ->
               A =:= B
       end,
-      {?MODULE, scoreset_sort},
+      fun ?MODULE:scoreset_sort/2,
       [{max_size, 10}]).
 
 
