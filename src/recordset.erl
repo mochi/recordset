@@ -88,13 +88,20 @@
 -type option() :: {atom(), term()}.
 -type op() :: statebox:op().
 
--export([new/3, from_list/2, from_list/4, to_list/1, size/1, max_size/1]).
+-export([new/3, from_list/2, from_list/4, to_list/1]).
 -export([is_recordset/1, size/1, max_size/1]).
 -export([add/2, delete/2]).
 -export([statebox_add/1, statebox_delete/1]).
 
 -spec new(cmp_fun(), cmp_fun(), [option()]) -> recordset().
 %% @doc Create an empty <code>recordset</code>.
+%%
+%% Options:
+%% <dl>
+%%   <dt>max_size</dt>
+%%   <dd>Specifies the maximum number of elements that will exist in the set.
+%% </dl>
+%%
 new(IdentityFun, SortFun, Options) ->
     #recordset{max_size=proplists:get_value(max_size, Options),
                identity_function=IdentityFun,
@@ -150,21 +157,18 @@ max_size(#recordset{max_size=MaxSize}) ->
 -spec add(term(), recordset()) -> recordset().
 %% @doc Add <code>Term</code> to the <code>recordset</code>.
 %%
-%% <p>
-%% If the <code>recordset</code> is fixed-sized and <code>Term</code> is the
-%% smallest element when <code>SortFun</code> and <code>max_size</code> has
-%% been exceeded, then <code>Term</code> will not be added to the set.  And if
-%% <code>Term</code> is not the smallest element in the set, the new smallest
-%% element will be removed.
-%% </p>
+%% If the <code>recordset</code> is fixed-sized and <code>Term</code> is
+%% the smallest element when <code>SortFun</code> and
+%% <code>max_size</code> has been exceeded, then <code>Term</code> will
+%% not be added to the set.  And if <code>Term</code> is not the smallest
+%% element in the set, the new smallest element will be removed.
 %%
-%% <p>
-%% If the <code>recordset</code> is not fixed-sized then <code>Term</code>
-%% will be added to the set as long as <code>IdentityFun</code> does not
-%% determine that is the same as an existing element and <code>SortFun</code>
-%% does not determine that it is smaller than the existing element with the
-%% same identity.
-%% </p>
+%% If the <code>recordset</code> is not fixed-sized then
+%% <code>Term</code> will be added to the set as long as
+%% <code>IdentityFun</code> does not determine that is the same as an
+%% existing element and <code>SortFun</code> does not determine that it
+%% is smaller than the existing element with the same identity.
+%%
 add(Term, RecordSet = #recordset{set=[]}) ->
     RecordSet#recordset{set=[Term]};
 add(Term, RecordSet = #recordset{
@@ -209,7 +213,7 @@ truncate([_H | Set], I) ->
 
 -spec delete(term(), recordset()) -> recordset().
 %% @doc Remove an element from the <code>recordset</code>.
-delete(Term, RecordSet = #recordset{set=[]}) ->
+delete(_Term, RecordSet = #recordset{set=[]}) ->
     RecordSet;
 delete(Term, RecordSet = #recordset{
                identity_function=IdentityFun,
