@@ -1,7 +1,78 @@
+%% @doc An optionally fixed-sized ordered set of complex terms, including
+%% Erlang records.
+%%
+%% <h2>Rationale</h2>
+%%
+%% A <code>recordset</code> provides 3 unique properties not found with
+%% <code>ordsets</code>.
+%%
+%% <ol>
+%% <li>User defined identity of elements. <p>
+%%
+%%   One of the most useful features of a set is that each item only exists in
+%%   the set once.  However both <code>sets</code> and <code>ordsets</code>
+%%   require that the entire term match (<code>=:=</code>) or compare equal
+%%   (<code>==</code>) respectively.  This requirement can be too strict for
+%%   certain types of data (such as a set of 10 high scores with only a single
+%%   score per user.)  <code>recordset</code> allows you to define a 2-arity
+%%   function which will be used to compare the identity of two elements in
+%%   the set.
+%%
+%%   <h3>Example</h3>
+%%
+%%   This <code>IdentityFun</code> compares 2 <code>#score{}</code> records
+%%   and determines that they are the same if and only if they were created by
+%%   the same player.  If two elements are the same, only one of them is
+%%   allowed to exist in the list.
+%%
+%%   <pre>
+%%     fun(#score{player=A}, #score{player=B}) ->
+%%         A =:= B
+%%     end.
+%%   </pre>
+%%
+%% </p></li>
+%%
+%% <li>User defined sorting of elements. <p>
+%%
+%%   The most useful feature of <code>ordsets</code> is that they are indeed
+%%   ordered.  However as with identity of elements, the sorting of elements
+%%   is based on the entirety of the terms in the set.  <code>recordset</code>
+%%   allows you to define another 2-arity function which will be used to sort
+%%   the elements.
+%%
+%%   <h3>Example</h3>
+%%
+%%   This <code>SortFun</code> will cause <code>#score{}</code> records
+%%   to be sorted by score in ascending order.  So that when converted to a
+%%   list the lowest scores will be at the front of the list.
+%%
+%%   <pre>
+%%     fun(#score{score=A}, #score{score=B}) ->
+%%         A &lt; B
+%%     end.
+%%   </pre>
+%%
+%% </p></li>
+%% <li>Optionally fixed size. <p>
+%%
+%%   <code>sets</code>, <code>ordsets</code>, and by default
+%%   <code>recordset</code> will also grow in size as items are added to the
+%%   set.  However it may be desirable to store a fixed number of elements
+%%   (such as 50 or 100 highest scores.)  In which case <code>recordset</code>
+%%   can be given a <code>max_size</code>, and once more than
+%%   <code>max_size</code> items are added to the set items which sort lowest
+%%   based on the supplied <code>SortFun</code> will be removed.
+%%
+%% </p></li>
+%% </ol>
+%%
+
 -module(recordset).
 
 -author('David Reid <dreid@mochimedia.com>').
 -copyright('2011 Mochi Media, Inc.').
+
 
 -export_type([recordset/0]).
 
@@ -18,20 +89,35 @@
 -type op() :: statebox:op().
 
 -export([new/3, from_list/2, from_list/4, to_list/1, size/1, max_size/1]).
+-export([is_recordset/1, size/1, max_size/1]).
 -export([add/2, delete/2]).
 -export([statebox_add/1, statebox_delete/1]).
 
 -spec new(cmp_fun(), cmp_fun(), [option()]) -> recordset().
+%% @doc Create an empty <code>recordset</code>.
 new(IdentityFun, SortFun, Options) ->
     #recordset{max_size=proplists:get_value(max_size, Options),
                identity_function=IdentityFun,
                sort_function=SortFun}.
 
+
+-spec is_recordset(any()) -> boolean().
+%% @doc Return <code>true</code> if the argument is a <code>recordset</code>,
+%%      <code>false</code> otherwise.
+is_recordset(#recordset{}) ->
+    true;
+is_recordset(_) ->
+    false.
+
+
 -spec from_list([term()], cmp_fun(), cmp_fun(), [option()]) -> recordset().
+%% @equiv from_list(List, recordset:new(IdentityFun, SortFun, Options))
 from_list(List, IdentityFun, SortFun, Options) ->
     from_list(List, recordset:new(IdentityFun, SortFun, Options)).
 
 -spec from_list([term()], recordset()) -> recordset().
+%% @doc Populate the specified <code>RecordSet</code> with the given
+%%      <code>List</code> of elements.
 from_list(List, RecordSet) ->
     lists:foldl(fun(Term, RS) ->
                         recordset:add(Term, RS)
@@ -39,20 +125,46 @@ from_list(List, RecordSet) ->
                 RecordSet,
                 List).
 
+
 -spec to_list(recordset()) -> list().
+%% @doc Return the elements in the <code>recordset</code> as an ordered list
+%%      of elements.
 to_list(#recordset{set=Set}) ->
     Set.
 
+
 -spec size(recordset()) -> integer().
+%% @doc Return the current size of the given <code>recordset</code> as an
+%%      integer.
 size(#recordset{set=Set}) ->
     length(Set).
 
+
 -spec max_size(recordset()) -> undefined | integer().
+%% @doc Return the max size as an integer or <code>undefined</code> if this
+%%      <code>recordset</code> is not of a fixed size.
 max_size(#recordset{max_size=MaxSize}) ->
     MaxSize.
 
 
 -spec add(term(), recordset()) -> recordset().
+%% @doc Add <code>Term</code> to the <code>recordset</code>.
+%%
+%% <p>
+%% If the <code>recordset</code> is fixed-sized and <code>Term</code> is the
+%% smallest element when <code>SortFun</code> and <code>max_size</code> has
+%% been exceeded, then <code>Term</code> will not be added to the set.  And if
+%% <code>Term</code> is not the smallest element in the set, the new smallest
+%% element will be removed.
+%% </p>
+%%
+%% <p>
+%% If the <code>recordset</code> is not fixed-sized then <code>Term</code>
+%% will be added to the set as long as <code>IdentityFun</code> does not
+%% determine that is the same as an existing element and <code>SortFun</code>
+%% does not determine that it is smaller than the existing element with the
+%% same identity.
+%% </p>
 add(Term, RecordSet = #recordset{set=[]}) ->
     RecordSet#recordset{set=[Term]};
 add(Term, RecordSet = #recordset{
@@ -96,6 +208,7 @@ truncate([_H | Set], I) ->
 
 
 -spec delete(term(), recordset()) -> recordset().
+%% @doc Remove an element from the <code>recordset</code>.
 delete(Term, RecordSet = #recordset{set=[]}) ->
     RecordSet;
 delete(Term, RecordSet = #recordset{
@@ -114,10 +227,14 @@ delete_1(Term, IdentityFun, [H | Set]) ->
 
 
 -spec statebox_add(term()) -> op().
+%% @doc Return a <code>statebox:op()</code> which will add the given
+%%      <code>Term</code> to a <code>recordset</code>.
 statebox_add(Term) ->
     {fun ?MODULE:add/2, [Term]}.
 
 
 -spec statebox_delete(term()) -> op().
+%% @doc Return a <code>statebox:op()</code> which will delete the given
+%%      <code>Term</code> from a <code>recordset</code>.
 statebox_delete(Term) ->
     {fun ?MODULE:delete/2, [Term]}.

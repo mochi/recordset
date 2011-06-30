@@ -211,3 +211,10 @@ statebox_delete_test() ->
             SS1),
 
     ?assertEqual([], recordset:to_list(SS2)).
+
+
+is_not_recordset_test() ->
+    ?assertEqual(false, recordset:is_recordset([])).
+
+is_recordset_test() ->
+    ?assertEqual(true, recordset:is_recordset(scoreset())).
