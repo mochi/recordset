@@ -164,3 +164,27 @@ from_list_newset_test() ->
     ?assertEqual([#score{score=10, player=1},
                   #score{score=20, player=2}],
                  recordset:to_list(SS)).
+
+
+statebox_add_test() ->
+    SS0 = scoreset(),
+
+    SS1 = statebox:apply_op(
+            recordset:statebox_add(#score{score=10, player=1}),
+            SS0),
+
+    ?assertEqual([#score{score=10, player=1}], recordset:to_list(SS1)).
+
+
+statebox_delete_test() ->
+    SS0 = scoreset(),
+
+    SS1 = recordset:add(#score{score=10, player=1}, SS0),
+
+    ?assertEqual([#score{score=10, player=1}], recordset:to_list(SS1)),
+
+    SS2 = statebox:apply_op(
+            recordset:statebox_delete(#score{score=10, player=1}),
+            SS1),
+
+    ?assertEqual([], recordset:to_list(SS2)).

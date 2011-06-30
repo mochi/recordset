@@ -15,9 +15,11 @@
 -opaque recordset() :: #recordset{}.
 -type cmp_fun() :: {fun((term(), term()) -> boolean())}.
 -type option() :: {atom(), term()}.
+-type op() :: statebox:op().
 
 -export([new/3, from_list/2, from_list/4, to_list/1, size/1, max_size/1]).
 -export([add/2, delete/2]).
+-export([statebox_add/1, statebox_delete/1]).
 
 -spec new(cmp_fun(), cmp_fun(), [option()]) -> recordset().
 new(IdentityFun, SortFun, Options) ->
@@ -92,6 +94,7 @@ truncate(S, 0) ->
 truncate([_H | Set], I) ->
     truncate(Set, I-1).
 
+
 -spec delete(term(), recordset()) -> recordset().
 delete(Term, RecordSet = #recordset{set=[]}) ->
     RecordSet;
@@ -108,3 +111,13 @@ delete_1(Term, IdentityFun, [H | Set]) ->
         false ->
             [H | delete_1(Term, IdentityFun, Set)]
     end.
+
+
+-spec statebox_add(term()) -> op().
+statebox_add(Term) ->
+    {fun ?MODULE:add/2, [Term]}.
+
+
+-spec statebox_delete(term()) -> op().
+statebox_delete(Term) ->
+    {fun ?MODULE:delete/2, [Term]}.
