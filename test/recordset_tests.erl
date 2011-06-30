@@ -11,13 +11,10 @@
 
 
 %% Scores should be sorted in ascending order by score if two scores are equal
-%% the older score should win.
+%% the newer score should win.
 scoreset_sort(#score{timestamp=TsA, score=ScoreA},
-              #score{timestamp=TsB, score=ScoreA}) ->
-    TsB < TsA;
-scoreset_sort(#score{score=ScoreA},
-              #score{score=ScoreB}) ->
-    ScoreA < ScoreB.
+              #score{timestamp=TsB, score=ScoreB}) ->
+    {ScoreA, TsA} < {ScoreB, TsB}.
 
 %% Initialize a scoreset defining identity as the same player id, with the
 %% above sort function, and a max size of 10.
@@ -65,34 +62,24 @@ add_test() ->
     %% appropriate order.
     SS4 = recordset:add(#score{timestamp=1, score=5, player=4}, SS3),
 
-    ?assertEqual([#score{timestamp=1, score=5, player=4},
-                  #score{score=5, player=2},
+    ?assertEqual([#score{score=5, player=2},
+                  #score{timestamp=1, score=5, player=4},
                   #score{score=10, player=1},
                   #score{score=15, player=3}],
                  recordset:to_list(SS4)),
 
 
-    %% Add a score by player 4 with the same score but a later timestamp
-    %% and we still have 4 elements with the older score preferred to the
-    %% most recent score.
-    SS5 = recordset:add(#score{timestamp=2, score=5, player=4}, SS4),
-
-    ?assertEqual([#score{timestamp=1, score=5, player=4},
-                  #score{score=5, player=2},
-                  #score{score=10, player=1},
-                  #score{score=15, player=3}],
-                 recordset:to_list(SS5)),
 
     %% Add a higher score for the first player and the recordset still has 4
     %% elements with the last element now being the highest score for player 1
     %% and the lower score for player one has been removed.
-    SS6 = recordset:add(#score{timestamp=1, score=20, player=1}, SS5),
+    SS5 = recordset:add(#score{timestamp=1, score=20, player=1}, SS4),
 
-    ?assertEqual([#score{timestamp=1, score=5, player=4},
-                  #score{score=5, player=2},
+    ?assertEqual([#score{score=5, player=2},
+                  #score{timestamp=1, score=5, player=4},
                   #score{score=15, player=3},
                   #score{timestamp=1, score=20, player=1}],
-                 recordset:to_list(SS6)).
+                 recordset:to_list(SS5)).
 
 
 max_size_test() ->
@@ -159,13 +146,13 @@ delete_test() ->
 delete_identity_test() ->
     %% create a new scoreset and add 1 score.
     SS0 = scoreset(),
-    SS1 = recordset:add(#score{score=10, player=1}),
+    SS1 = recordset:add(#score{score=10, player=1}, SS0),
 
     %% delete/2 should only care about the identity of the items as determined
     %% by the IdentityFun and not complete record equality.  So when we delete
     %% A score only setting the player attribute any score for that player
     %% should be removed from the set.
-    SS2 = recordset:delete(#score{player=1}),
+    SS2 = recordset:delete(#score{player=1}, SS1),
     ?assertEqual([], recordset:to_list(SS2)).
 
 
