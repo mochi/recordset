@@ -112,39 +112,75 @@ max_size_test() ->
 
 
 max_size_getter_test() ->
+    %% Check that we can ask what the max size of a set is.
     ?assertEqual(10, recordset:max_size(scoreset())).
 
 
 size_test() ->
     SS0 = scoreset(),
 
+    %% The size of a newly initialized empty recordset should be 0.
     ?assertEqual(0, recordset:size(SS0)),
 
+    %% Once we add an item to the set the size should be 1.
     SS1 = recordset:add(#score{}, SS0),
 
     ?assertEqual(1, recordset:size(SS1)),
 
+    %% If we add more than max_size items to the set size shouldn't exceed the
+    %% max_size.
     SS2 = lists:foldl(fun(I, SS) ->
                                 recordset:add(#score{score=I, player=I}, SS)
                         end,
                         SS1, lists:seq(1,11)),
 
-    ?assertEqual(10, recordset:size(SS2)).
+    ?assertEqual(10, recordset:size(SS2)),
+
+    %% The size of the set as an ordered list of items should be the same as
+    %% the size of the recordset.
+    ?assertEqual(recordset:size(SS2),
+                 length(recordset:to_list(SS2))).
 
 
 delete_test() ->
+    %% Create a new scoreset and add 3 scores.
     SS0 = scoreset(),
     SS1 = recordset:add(#score{score=10, player=1}, SS0),
     SS2 = recordset:add(#score{score=15, player=2}, SS1),
     SS3 = recordset:add(#score{score=20, player=3}, SS2),
 
+    %% When we delete an item from the set the should contain the 2 other
+    %% scores we added but not the score we deleted.
     SS4 = recordset:delete(#score{score=15, player=2}, SS3),
     ?assertEqual([#score{score=10, player=1},
                   #score{score=20, player=3}], recordset:to_list(SS4)).
 
 
+delete_identity_test() ->
+    %% create a new scoreset and add 1 score.
+    SS0 = scoreset(),
+    SS1 = recordset:add(#score{score=10, player=1}),
+
+    %% delete/2 should only care about the identity of the items as determined
+    %% by the IdentityFun and not complete record equality.  So when we delete
+    %% A score only setting the player attribute any score for that player
+    %% should be removed from the set.
+    SS2 = recordset:delete(#score{player=1}),
+    ?assertEqual([], recordset:to_list(SS2)).
+
+
+delete_non_existant_test() ->
+    SS0 = scoreset(),
+
+    %% Deleting a score that does not exist in the recordset should succeed.
+    SS1 = recordset:delete(#score{player=1}, SS0),
+    ?assertEqual([], recordset:to_list(SS1)).
+
+
 from_list_test() ->
     SS0 = scoreset(),
+
+    %% Creating a set from a list should add all items to the existing set.
     SS1 = recordset:from_list([#score{score=20, player=2},
                                #score{score=10, player=1}], SS0),
 
@@ -153,6 +189,8 @@ from_list_test() ->
 
 
 from_list_newset_test() ->
+    %% You should also be able to create a new set by passing IdentityFun,
+    %% SortFun, and Options to from_list/4
     SS = recordset:from_list([#score{score=20, player=2},
                               #score{score=10, player=1}],
                              fun(#score{player=A}, #score{player=B}) ->
@@ -180,8 +218,6 @@ statebox_delete_test() ->
     SS0 = scoreset(),
 
     SS1 = recordset:add(#score{score=10, player=1}, SS0),
-
-    ?assertEqual([#score{score=10, player=1}], recordset:to_list(SS1)),
 
     SS2 = statebox:apply_op(
             recordset:statebox_delete(#score{score=10, player=1}),
