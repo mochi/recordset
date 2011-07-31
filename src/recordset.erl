@@ -88,43 +88,48 @@
 -type option() :: {atom(), term()}.
 -type op() :: statebox:op().
 
--export([new/3, from_list/2, from_list/4, to_list/1]).
+-export([new/2, new/3]).
+-export([from_list/2, from_list/4, to_list/1]).
 -export([is_recordset/1, size/1, max_size/1]).
 -export([add/2, delete/2]).
 -export([statebox_add/1, statebox_delete/1]).
 
--spec new(cmp_fun(), cmp_fun(), [option()]) -> recordset().
+%% @equiv new(IdentityFun, SortFun, [])
+-spec new(cmp_fun(), cmp_fun()) -> recordset().
+new(IdentityFun, SortFun) ->
+    new(IdentityFun, SortFun, []).
+
 %% @doc Create an empty <code>recordset</code>.
-%%
 %% Options:
 %% <dl>
-%%   <dt>max_size</dt>
-%%   <dd>Specifies the maximum number of elements that will exist in the set.
+%%  <dt><code>max_size</code></dt>
+%%  <dd>Specifies the maximum number of elements that will exist in the set.
+%%  </dd>
 %% </dl>
-%%
+-spec new(cmp_fun(), cmp_fun(), [option()]) -> recordset().
 new(IdentityFun, SortFun, Options) ->
     #recordset{max_size=proplists:get_value(max_size, Options),
                identity_function=IdentityFun,
                sort_function=SortFun}.
 
 
--spec is_recordset(any()) -> boolean().
 %% @doc Return <code>true</code> if the argument is a <code>recordset</code>,
 %%      <code>false</code> otherwise.
+-spec is_recordset(any()) -> boolean().
 is_recordset(#recordset{}) ->
     true;
 is_recordset(_) ->
     false.
 
 
--spec from_list([term()], cmp_fun(), cmp_fun(), [option()]) -> recordset().
 %% @equiv from_list(List, recordset:new(IdentityFun, SortFun, Options))
+-spec from_list([term()], cmp_fun(), cmp_fun(), [option()]) -> recordset().
 from_list(List, IdentityFun, SortFun, Options) ->
     from_list(List, recordset:new(IdentityFun, SortFun, Options)).
 
--spec from_list([term()], recordset()) -> recordset().
 %% @doc Populate the specified <code>RecordSet</code> with the given
 %%      <code>List</code> of elements.
+-spec from_list([term()], recordset()) -> recordset().
 from_list(List, RecordSet) ->
     lists:foldl(fun(Term, RS) ->
                         recordset:add(Term, RS)
@@ -133,42 +138,41 @@ from_list(List, RecordSet) ->
                 List).
 
 
--spec to_list(recordset()) -> list().
 %% @doc Return the elements in the <code>recordset</code> as an ordered list
 %%      of elements.
+-spec to_list(recordset()) -> list().
 to_list(#recordset{set=Set}) ->
     Set.
 
 
--spec size(recordset()) -> integer().
 %% @doc Return the current size of the given <code>recordset</code> as an
 %%      integer.
+-spec size(recordset()) -> integer().
 size(#recordset{set=Set}) ->
     length(Set).
 
 
--spec max_size(recordset()) -> undefined | integer().
 %% @doc Return the max size as an integer or <code>undefined</code> if this
 %%      <code>recordset</code> is not of a fixed size.
+-spec max_size(recordset()) -> undefined | integer().
 max_size(#recordset{max_size=MaxSize}) ->
     MaxSize.
 
 
--spec add(term(), recordset()) -> recordset().
 %% @doc Add <code>Term</code> to the <code>recordset</code>.
 %%
-%% If the <code>recordset</code> is fixed-sized and <code>Term</code> is
-%% the smallest element when <code>SortFun</code> and
-%% <code>max_size</code> has been exceeded, then <code>Term</code> will
-%% not be added to the set.  And if <code>Term</code> is not the smallest
-%% element in the set, the new smallest element will be removed.
+%% If the <code>recordset</code> is fixed-sized and <code>Term</code> is the
+%% smallest element when <code>SortFun</code> and <code>max_size</code> has
+%% been exceeded, then <code>Term</code> will not be added to the set.  And if
+%% <code>Term</code> is not the smallest element in the set, the new smallest
+%% element will be removed.
 %%
-%% If the <code>recordset</code> is not fixed-sized then
-%% <code>Term</code> will be added to the set as long as
-%% <code>IdentityFun</code> does not determine that is the same as an
-%% existing element and <code>SortFun</code> does not determine that it
-%% is smaller than the existing element with the same identity.
-%%
+%% If the <code>recordset</code> is not fixed-sized then <code>Term</code>
+%% will be added to the set as long as <code>IdentityFun</code> does not
+%% determine that is the same as an existing element and <code>SortFun</code>
+%% does not determine that it is smaller than the existing element with the
+%% same identity.
+-spec add(term(), recordset()) -> recordset().
 add(Term, RecordSet = #recordset{set=[]}) ->
     RecordSet#recordset{set=[Term]};
 add(Term, RecordSet = #recordset{
@@ -211,8 +215,8 @@ truncate([_H | Set], I) ->
     truncate(Set, I-1).
 
 
--spec delete(term(), recordset()) -> recordset().
 %% @doc Remove an element from the <code>recordset</code>.
+-spec delete(term(), recordset()) -> recordset().
 delete(_Term, RecordSet = #recordset{set=[]}) ->
     RecordSet;
 delete(Term, RecordSet = #recordset{
@@ -230,15 +234,15 @@ delete_1(Term, IdentityFun, [H | Set]) ->
     end.
 
 
--spec statebox_add(term()) -> op().
 %% @doc Return a <code>statebox:op()</code> which will add the given
 %%      <code>Term</code> to a <code>recordset</code>.
+-spec statebox_add(term()) -> op().
 statebox_add(Term) ->
     {fun ?MODULE:add/2, [Term]}.
 
 
--spec statebox_delete(term()) -> op().
 %% @doc Return a <code>statebox:op()</code> which will delete the given
 %%      <code>Term</code> from a <code>recordset</code>.
+-spec statebox_delete(term()) -> op().
 statebox_delete(Term) ->
     {fun ?MODULE:delete/2, [Term]}.

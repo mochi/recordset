@@ -28,6 +28,20 @@ scoreset() ->
       [{max_size, 10}]).
 
 
+new_2_test() ->
+    RS = recordset:new(fun(A, B) -> A =:= B end,
+                       fun(A, B) -> A < B end),
+
+    ?assertEqual(undefined, recordset:max_size(RS)).
+
+
+new_3_test() ->
+    RS = recordset:new(fun(A, B) -> A =:= B end,
+                       fun(A, B) -> A < B end,
+                       [{max_size, 10}]),
+    ?assertEqual(10, recordset:max_size(RS)).
+
+
 add_test() ->
     %% Initialize an empty scoreset.
     SS = scoreset(),
