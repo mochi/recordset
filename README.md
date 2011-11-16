@@ -31,10 +31,10 @@ player.
 To initialize an empty recordset we call ``recordset:new/3`` which takes 3
 arguments:
 
- 1. ``IdentityFun`` - A 2-arity fun which will return ``true`` if it's two
+ 1. ``IdentityFun`` - A 2-arity fun which will return ``true`` if its two
 arguments are have the same identity.
- 2. ``SortFun`` - A 2-arity fun which will return ``true`` if it's first
-argument is less than it's second argument.
+ 2. ``SortFun`` - A 2-arity fun which will return ``true`` if its first
+argument is less than its second argument.
  3. ``Options`` - This is an erlang ``proplist`` of options.  Currently the
 only supported option is ``max_size`` which is a positive integer indicating
 the maximum number of items allowed to be in the set.
