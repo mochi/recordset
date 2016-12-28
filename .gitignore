@@ -6,3 +6,6 @@
 .DS_Store
 /TEST-*.xml
 /deps
+_build
+.idea
+*.iml

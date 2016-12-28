@@ -1,11 +1,11 @@
-{application, recordset,
- [
-  {description, "A fixed-size ordered set of complex terms."},
-  {vsn, "0.1.0"},
-  {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
-                 ]},
-  {env, []}
- ]}.
+{application, recordset, [
+    {description, "A fixed-size ordered set of complex terms."},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [kernel, stdlib]},
+    {env, []},
+    {modules, []},
+    {maintainers, ["mochi"]},
+    {licenses, ["MIT"]},
+    {links, [{"Github", "https://github.com/mochi/recordset"}]}
+]}.
